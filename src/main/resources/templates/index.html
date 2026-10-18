@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokédex - Spring Boot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { transition: background-color 0.3s ease, color 0.3s ease; }
+        [data-bs-theme="light"] body { background-color: #f4f6f9; }
+        [data-bs-theme="dark"] body { background-color: #121212; }
+
+        .poke-logo {
+            max-width: 260px;
+            height: auto;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));
+        }
+        .poke-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        .poke-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.25) !important;
+        }
+        .poke-img {
+            height: 200px;
+            object-fit: contain;
+            background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(233,236,239,0.5) 100%);
+            padding: 15px;
+        }
+        [data-bs-theme="dark"] .poke-img {
+            background: radial-gradient(circle, #2b3035 0%, #1a1d20 100%);
+        }
+        /* Tamaño de las imagenes en Pixel Art */
+        .pixel-mode {
+            padding: 0px !important;
+            transform: scale(1.20);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container py-4">
+    <!-- Barra superior de botones (Modo Oscuro y Pixel Art) -->
+    <div class="d-flex justify-content-end gap-2 mb-3">
+        <button id="btnPixel" class="btn btn-outline-primary fw-bold shadow-sm" onclick="togglePixelArt()">
+            👾 Modo Pixel Art
+        </button>
+        <button id="btnTheme" class="btn btn-outline-dark fw-bold shadow-sm" onclick="toggleDarkMode()">
+            🌙 Modo Oscuro
+        </button>
+    </div>
+
+    <!-- Logo de Pokémon en la parte superior -->
+    <div class="text-center mb-4">
+        <a th:href="@{/}">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/International_Pok%C3%A9mon_logo.svg"
+                 alt="Pokémon Logo" class="poke-logo">
+        </a>
+    </div>
+
+    <!-- Delay de 4 segundos -->
+    <div class="row justify-content-center mb-5">
+        <div class="col-12 col-md-8 col-lg-6">
+            <form id="formBuscar" th:action="@{/}" method="get" class="d-flex flex-column flex-sm-row gap-2">
+                <input type="text" name="buscar" class="form-control form-control-lg shadow-sm"
+                       placeholder="Buscar por nombre o ID (Pikachu o 25)..." th:value="${buscar}">
+                <button type="submit" id="btnSubmit" class="btn btn-danger btn-lg shadow-sm text-nowrap">
+                    Buscar
+                </button>
+                <a th:if="${buscar != null and !buscar.isEmpty()}" th:href="@{/}" class="btn btn-secondary btn-lg shadow-sm">
+                    Limpiar
+                </a>
+            </form>
+            <!-- Indicador de espera durante los 4 segundos -->
+            <div id="mensajeEspera" class="text-center mt-3 d-none">
+                <div class="spinner-border text-danger spinner-border-sm me-2" role="status"></div>
+                <span class="fw-bold text-danger">Cargando... </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mensaje de error -->
+    <div th:if="${error}" class="alert alert-warning text-center col-md-6 mx-auto shadow-sm" role="alert">
+        <span th:text="${error}"></span>
+    </div>
+
+    <!-- Responsivo: 1 columna en móvil, 2 en tablet, 3 en PC -->
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
+        <div class="col" th:each="poke : ${pokemones}">
+            <a th:href="@{/pokemon/{nombre}(nombre=${poke.nombre})}" class="text-decoration-none">
+                <div class="card h-100 shadow-sm border-0 poke-card">
+                    <!-- Guardamos ambas URLs en atributos data-hd y data-pixel -->
+                    <img th:src="${poke.imagen}"
+                         th:data-hd="${poke.imagen}"
+                         th:data-pixel="${poke.imagenPixel}"
+                         class="card-img-top poke-img switchable-img"
+                         th:alt="${poke.nombre}">
+                    <div class="card-body text-center">
+                        <span class="badge bg-secondary mb-2" th:text="'#' + ${poke.id}"></span>
+                        <h4 class="card-title text-capitalize fw-bold" th:text="${poke.nombre}"></h4>
+                        <p class="card-text text-body-secondary small mt-2" th:text="${poke.descripcion}"></p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Paginación para ver más Pokémon -->
+    <div th:if="${buscar == null or buscar.isEmpty()}" class="d-flex justify-content-center align-items-center gap-3 mt-5">
+        <a th:if="${paginaActual > 0}"
+           th:href="@{/(pagina=${paginaActual - 1})}"
+           class="btn btn-danger px-4 fw-bold shadow-sm">&larr; Anterior</a>
+
+        <span class="fw-bold fs-5" th:text="'Página ' + (${paginaActual + 1})"></span>
+
+        <a th:href="@{/(pagina=${paginaActual + 1})}"
+           class="btn btn-danger px-4 fw-bold shadow-sm">Siguiente &rarr;</a>
+    </div>
+</div>
+
+<script>
+    // 1. Lógica del Delay de 4 segundos en el buscador
+    const formBuscar = document.getElementById('formBuscar');
+    const btnSubmit = document.getElementById('btnSubmit');
+    const mensajeEspera = document.getElementById('mensajeEspera');
+
+    formBuscar.addEventListener('submit', function(event) {
+        event.preventDefault(); // Detiene el envío inmediato
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '⏳ Buscando...';
+        mensajeEspera.classList.remove('d-none');
+
+        setTimeout(() => {
+            formBuscar.submit(); // Envía el formulario tras 4000 ms (4 segundos)
+        }, 4000);
+    });
+
+    // 2. Lógica de Modo Oscuro
+    function aplicarTema(tema) {
+        document.documentElement.setAttribute('data-bs-theme', tema);
+        const btnTheme = document.getElementById('btnTheme');
+        if (tema === 'dark') {
+            btnTheme.innerHTML = '☀️ Modo Claro';
+            btnTheme.className = 'btn btn-outline-light fw-bold shadow-sm';
+        } else {
+            btnTheme.innerHTML = '🌙 Modo Oscuro';
+            btnTheme.className = 'btn btn-outline-dark fw-bold shadow-sm';
+        }
+    }
+
+    function toggleDarkMode() {
+        const actual = document.documentElement.getAttribute('data-bs-theme');
+        const nuevo = actual === 'dark' ? 'light' : 'dark';
+        localStorage.setItem('pokeTema', nuevo);
+        aplicarTema(nuevo);
+    }
+
+    // 3. Lógica de Modo Pixel Art
+    function aplicarPixelArt(esPixel) {
+        const imagenes = document.querySelectorAll('.switchable-img');
+        const btnPixel = document.getElementById('btnPixel');
+
+        imagenes.forEach(img => {
+            const hdUrl = img.getAttribute('data-hd');
+            const pixelUrl = img.getAttribute('data-pixel');
+            if (esPixel && pixelUrl) {
+                img.src = pixelUrl;
+                img.classList.add('pixel-mode');
+            } else {
+                img.src = hdUrl;
+                img.classList.remove('pixel-mode');
+            }
+        });
+
+        if (esPixel) {
+            btnPixel.innerHTML = '✨ Modo HD';
+            btnPixel.classList.replace('btn-outline-primary', 'btn-primary');
+        } else {
+            btnPixel.innerHTML = '👾 Modo Pixel Art';
+            btnPixel.classList.replace('btn-primary', 'btn-outline-primary');
+        }
+    }
+
+    function togglePixelArt() {
+        const esPixelActual = localStorage.getItem('pokePixel') === 'true';
+        const nuevoEstado = !esPixelActual;
+        localStorage.setItem('pokePixel', nuevoEstado);
+        aplicarPixelArt(nuevoEstado);
+    }
+
+    // Cargar preferencias guardadas al abrir la página
+    document.addEventListener('DOMContentLoaded', () => {
+        const temaGuardado = localStorage.getItem('pokeTema') || 'light';
+        const pixelGuardado = localStorage.getItem('pokePixel') === 'true';
+        aplicarTema(temaGuardado);
+        aplicarPixelArt(pixelGuardado);
+    });
+</script>
+
+</body>
+</html>

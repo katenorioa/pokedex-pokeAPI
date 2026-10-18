@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Detalle - ' + ${pokemon.nombre}"></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { transition: background-color 0.3s ease, color 0.3s ease; }
+        [data-bs-theme="light"] body { background-color: #f4f6f9; }
+        [data-bs-theme="dark"] body { background-color: #121212; }
+
+        .poke-logo { max-width: 200px; height: auto; }
+        .detail-card { border-radius: 20px; overflow: hidden; }
+        .poke-detail-img {
+            height: 280px;
+            width: 280px;
+            object-fit: contain;
+        }
+        .pixel-mode {
+            image-rendering: pixelated;
+        }
+        .panel-izquierdo {
+            background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(233,236,239,0.6) 100%);
+        }
+        [data-bs-theme="dark"] .panel-izquierdo {
+            background: radial-gradient(circle, #2b3035 0%, #1a1d20 100%);
+        }
+        .btn-back-fixed {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+            border-radius: 50px;
+            padding: 12px 28px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container py-4 mb-5">
+    <!-- Botones de Tema y Pixel Art -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <a th:href="@{/}">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/International_Pok%C3%A9mon_logo.svg"
+                 alt="Pokémon Logo" class="poke-logo">
+        </a>
+        <div class="d-flex gap-2">
+            <button id="btnPixel" class="btn btn-outline-primary fw-bold shadow-sm" onclick="togglePixelArt()">
+                👾 Modo Pixel Art
+            </button>
+            <button id="btnTheme" class="btn btn-outline-dark fw-bold shadow-sm" onclick="toggleDarkMode()">
+                🌙 Modo Oscuro
+            </button>
+        </div>
+    </div>
+
+    <div class="card shadow-lg border-0 detail-card mx-auto" style="max-width: 900px;">
+        <div class="row g-0">
+            <!-- Columna Izquierda: Imagen y Tipos -->
+            <div class="col-md-5 panel-izquierdo d-flex flex-column align-items-center justify-content-center p-4">
+                <img th:src="${pokemon.imagen}"
+                     th:data-hd="${pokemon.imagen}"
+                     th:data-pixel="${pokemon.imagenPixel}"
+                     class="img-fluid poke-detail-img switchable-img mb-3"
+                     th:alt="${pokemon.nombre}">
+                <div>
+                    <span th:each="tipo : ${pokemon.tipos}"
+                          class="badge bg-danger text-uppercase me-1 px-3 py-2 fs-6"
+                          th:text="${tipo}"></span>
+                </div>
+            </div>
+
+            <!-- Columna Derecha: Detalles y Estadísticas -->
+            <div class="col-md-7 p-4 p-md-5">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h2 class="text-capitalize fw-bold m-0" th:text="${pokemon.nombre}"></h2>
+                    <span class="fs-4 text-body-secondary fw-bold" th:text="'#' + ${pokemon.id}"></span>
+                </div>
+
+                <hr>
+
+                <h5 class="fw-bold text-secondary">Descripción de la Pokédex</h5>
+                <p class="lead fs-6 mb-4" th:text="${pokemon.descripcion}"></p>
+
+                <div class="row text-center mb-4 bg-body-tertiary p-3 rounded-3">
+                    <div class="col-6 border-end">
+                        <span class="text-body-secondary d-block small">Altura</span>
+                        <strong class="fs-5" th:text="${pokemon.altura} + ' m'"></strong>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-body-secondary d-block small">Peso</span>
+                        <strong class="fs-5" th:text="${pokemon.peso} + ' kg'"></strong>
+                    </div>
+                </div>
+
+                <h5 class="fw-bold text-secondary mb-3">Estadísticas Base</h5>
+                <div th:each="stat : ${pokemon.estadisticas}" class="mb-2">
+                    <div class="d-flex justify-content-between small fw-bold text-capitalize mb-1">
+                        <span th:text="${stat.key}"></span>
+                        <span th:text="${stat.value}"></span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar bg-danger" role="progressbar"
+                             th:style="'width: ' + (${stat.value} > 100 ? 100 : ${stat.value}) + '%'"
+                             th:aria-valuenow="${stat.value}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Botón Back fijo abajo a la derecha -->
+<button onclick="volverAtras()" class="btn btn-danger btn-lg shadow-lg btn-back-fixed">
+    &larr; Back
+</button>
+
+<-- Funcion del Boton Back para regresar a la ultima página -->
+<script>
+    function volverAtras() {
+        if (document.referrer.includes(window.location.host)) {
+            window.history.back();
+        } else {
+            window.location.href = '/';
+        }
+    }
+
+    function aplicarTema(tema) {
+        document.documentElement.setAttribute('data-bs-theme', tema);
+        const btnTheme = document.getElementById('btnTheme');
+        if (tema === 'dark') {
+            btnTheme.innerHTML = '☀️ Modo Claro';
+            btnTheme.className = 'btn btn-outline-light fw-bold shadow-sm';
+        } else {
+            btnTheme.innerHTML = '🌙 Modo Oscuro';
+            btnTheme.className = 'btn btn-outline-dark fw-bold shadow-sm';
+        }
+    }
+
+    function toggleDarkMode() {
+        const actual = document.documentElement.getAttribute('data-bs-theme');
+        const nuevo = actual === 'dark' ? 'light' : 'dark';
+        localStorage.setItem('pokeTema', nuevo);
+        aplicarTema(nuevo);
+    }
+
+    function aplicarPixelArt(esPixel) {
+        const imagenes = document.querySelectorAll('.switchable-img');
+        const btnPixel = document.getElementById('btnPixel');
+
+        imagenes.forEach(img => {
+            const hdUrl = img.getAttribute('data-hd');
+            const pixelUrl = img.getAttribute('data-pixel');
+            if (esPixel && pixelUrl) {
+                img.src = pixelUrl;
+                img.classList.add('pixel-mode');
+            } else {
+                img.src = hdUrl;
+                img.classList.remove('pixel-mode');
+            }
+        });
+
+        if (esPixel) {
+            btnPixel.innerHTML = '✨ Modo HD';
+            btnPixel.classList.replace('btn-outline-primary', 'btn-primary');
+        } else {
+            btnPixel.innerHTML = '👾 Modo Pixel Art';
+            btnPixel.classList.replace('btn-primary', 'btn-outline-primary');
+        }
+    }
+
+    function togglePixelArt() {
+        const esPixelActual = localStorage.getItem('pokePixel') === 'true';
+        const nuevoEstado = !esPixelActual;
+        localStorage.setItem('pokePixel', nuevoEstado);
+        aplicarPixelArt(nuevoEstado);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        aplicarTema(localStorage.getItem('pokeTema') || 'light');
+        aplicarPixelArt(localStorage.getItem('pokePixel') === 'true');
+    });
+</script>
+
+</body>
+</html>
