@@ -83,6 +83,33 @@
         </div>
     </div>
 
+    <!-- Filtro con Selects Anidados y Fetch/Promises -->
+    <div class="row justify-content-center mb-5">
+        <div class="col-12 col-md-10 col-lg-8">
+            <div class="card shadow-sm border-0 p-3">
+                <h6 class="fw-bold text-danger mb-3">⚡ Explorador Rápido por Tipo (Endpoint Anidado + Fetch/Promises)</h6>
+                <div class="row g-2">
+                    <!-- Select 1: Endpoint Principal (/type) -->
+                    <div class="col-12 col-sm-6">
+                        <label class="form-label small fw-bold text-secondary">1. Selecciona un Tipo:</label>
+                        <select id="selectTipo" class="form-select shadow-sm">
+                            <option value="">Cargando tipos desde PokéAPI...</option>
+                        </select>
+                    </div>
+
+                    <!-- Select 2 Anidado: Endpoint Hijo (/type/{id} -> /pokemon/{name}) -->
+                    <div class="col-12 col-sm-6">
+                        <label class="form-label small fw-bold text-secondary">2. Pokémon (Respuesta Concatenada):</label>
+                        <select id="selectPokemonAnidado" class="form-select shadow-sm" disabled>
+                            <option value="">Primero elige un tipo...</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <!-- Mensaje de error -->
     <div th:if="${error}" class="alert alert-warning text-center col-md-6 mx-auto shadow-sm" role="alert">
         <span th:text="${error}"></span>
@@ -199,6 +226,96 @@
         aplicarTema(temaGuardado);
         aplicarPixelArt(pixelGuardado);
     });
+
+    // 4. Lógica de Fetch, Promises, Endpoint Anidado y Select Anidado
+    const selectTipo = document.getElementById('selectTipo');
+    const selectPokemonAnidado = document.getElementById('selectPokemonAnidado');
+
+    // A) Petición inicial con fetch() y Promise (.then) para llenar el primer Select
+    function cargarTipos() {
+        fetch('https://pokeapi.co/api/v2/type')
+            .then(response => response.json()) // Promesa 1: Convertir respuesta a JSON
+            .then(data => {                    // Promesa 2: Procesar los datos recibidos
+                selectTipo.innerHTML = '<option value="">-- Elige un tipo elemental --</option>';
+                data.results.forEach(tipo => {
+                    // Guardamos la URL del endpoint anidado directamente en el value del option
+                    const option = document.createElement('option');
+                    option.value = tipo.url;
+                    option.textContent = tipo.name.toUpperCase();
+                    selectTipo.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error cargando tipos:', error);
+                selectTipo.innerHTML = '<option value="">Error al cargar tipos</option>';
+            });
+    }
+
+    // B) Cuando cambia el Select 1, consumimos el Endpoint Anidado y combinamos Promises
+    selectTipo.addEventListener('change', async function() {
+        const urlEndpointAnidado = this.value; // Ej: https://pokeapi.co/api/v2/type/10/
+
+        if (!urlEndpointAnidado) {
+            selectPokemonAnidado.innerHTML = '<option value="">Primero elige un tipo...</option>';
+            selectPokemonAnidado.disabled = true;
+            return;
+        }
+
+        selectPokemonAnidado.disabled = true;
+        selectPokemonAnidado.innerHTML = '<option value="">⏳ Consultando endpoint anidado...</option>';
+
+        try {
+            // 1. Llamada al Endpoint Anidado del Tipo seleccionado
+            const resTipo = await fetch(urlEndpointAnidado);
+            const dataTipo = await resTipo.json();
+
+            // Tomamos los primeros 8 Pokémon de ese tipo para no saturar la red
+            const primerosPokemon = dataTipo.pokemon.slice(0, 8);
+
+            // 2. Combinación de Peticiones (Promise.all):
+            // Por cada Pokémon de la lista, hacemos un fetch() a su propia URL anidada (p.pokemon.url)
+            const promesasDetalle = primerosPokemon.map(item =>
+                fetch(item.pokemon.url).then(res => res.json())
+            );
+
+            // Promise.all espera a que TODAS las peticiones paralelas terminen
+            const detallesPokemones = await Promise.all(promesasDetalle);
+
+            // 3. Llenar el Select Anidado concatenando múltiples datos de las respuestas
+            selectPokemonAnidado.innerHTML = '<option value="">-- Selecciona un Pokémon para ir a su detalle --</option>';
+
+            detallesPokemones.forEach(poke => {
+                const tiposConcatenados = poke.types.map(t => t.type.name).join('/');
+                const alturaMetros = poke.height / 10;
+
+                // Concatenación de la respuesta en el texto del Select Anidado
+                const textoConcatenado = `#${poke.id} - ${poke.name.toUpperCase()} [${tiposConcatenados}] | Alt: ${alturaMetros}m`;
+
+                const option = document.createElement('option');
+                option.value = poke.name;
+                option.textContent = textoConcatenado;
+                selectPokemonAnidado.appendChild(option);
+            });
+
+            selectPokemonAnidado.disabled = false;
+
+        } catch (error) {
+            console.error('Error en endpoint anidado:', error);
+            selectPokemonAnidado.innerHTML = '<option value="">Error al obtener Pokémon</option>';
+        }
+    });
+
+    // C) Al elegir un Pokémon del segundo Select, redirige a tu controlador de Spring Boot
+    selectPokemonAnidado.addEventListener('change', function() {
+        const nombrePokemon = this.value;
+        if (nombrePokemon) {
+            window.location.href = '/pokemon/' + nombrePokemon;
+        }
+    });
+
+    // Ejecutamos la carga de tipos al iniciar la página
+    document.addEventListener('DOMContentLoaded', cargarTipos);
+
 </script>
 
 </body>
