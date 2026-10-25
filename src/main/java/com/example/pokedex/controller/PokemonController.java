@@ -35,7 +35,7 @@ public class PokemonController {
             if (encontrado != null) {
                 pokemones.add(encontrado);
             } else {
-                model.addAttribute("error", "No se encontró ningún Pokémon llamado o con ID: " + buscar);
+                model.addAttribute("error", "No Pokémon found with name or ID: " + buscar);
             }
         } else {
             int offset = pagina * limite;

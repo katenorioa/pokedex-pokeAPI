@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="es" data-bs-theme="light">
+<html xmlns:th="http://www.thymeleaf.org" lang="en" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -34,27 +34,27 @@
         [data-bs-theme="dark"] .poke-img {
             background: radial-gradient(circle, #2b3035 0%, #1a1d20 100%);
         }
-        /* Tamaño de las imagenes en Pixel Art */
         .pixel-mode {
+            image-rendering: pixelated;
             padding: 0px !important;
-            transform: scale(1.20);
+            transform: scale(1.45);
         }
     </style>
 </head>
 <body>
 
 <div class="container py-4">
-    <!-- Barra superior de botones (Modo Oscuro y Pixel Art) -->
+    <!-- Top bar buttons (Dark Mode & Pixel Art) -->
     <div class="d-flex justify-content-end gap-2 mb-3">
         <button id="btnPixel" class="btn btn-outline-primary fw-bold shadow-sm" onclick="togglePixelArt()">
-            👾 Modo Pixel Art
+            👾 Pixel Art Mode
         </button>
         <button id="btnTheme" class="btn btn-outline-dark fw-bold shadow-sm" onclick="toggleDarkMode()">
-            🌙 Modo Oscuro
+            🌙 Dark Mode
         </button>
     </div>
 
-    <!-- Logo de Pokémon en la parte superior -->
+    <!-- Pokémon Logo -->
     <div class="text-center mb-4">
         <a th:href="@{/}">
             <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/International_Pok%C3%A9mon_logo.svg"
@@ -62,46 +62,42 @@
         </a>
     </div>
 
-    <!-- Delay de 4 segundos -->
-    <div class="row justify-content-center mb-5">
+    <!-- Search bar with 4-second delay -->
+    <div class="row justify-content-center mb-4">
         <div class="col-12 col-md-8 col-lg-6">
             <form id="formBuscar" th:action="@{/}" method="get" class="d-flex flex-column flex-sm-row gap-2">
                 <input type="text" name="buscar" class="form-control form-control-lg shadow-sm"
-                       placeholder="Buscar por nombre o ID (Pikachu o 25)..." th:value="${buscar}">
+                       placeholder="Search by name or ID (e.g. gengar, 94)..." th:value="${buscar}">
                 <button type="submit" id="btnSubmit" class="btn btn-danger btn-lg shadow-sm text-nowrap">
-                    Buscar
+                    Search
                 </button>
                 <a th:if="${buscar != null and !buscar.isEmpty()}" th:href="@{/}" class="btn btn-secondary btn-lg shadow-sm">
-                    Limpiar
+                    Clear
                 </a>
             </form>
-            <!-- Indicador de espera durante los 4 segundos -->
             <div id="mensajeEspera" class="text-center mt-3 d-none">
                 <div class="spinner-border text-danger spinner-border-sm me-2" role="status"></div>
-                <span class="fw-bold text-danger">Cargando... </span>
+                <span class="fw-bold text-danger">Searching Pokédex... (waiting 4 seconds)</span>
             </div>
         </div>
     </div>
 
-    <!-- Filtro con Selects Anidados y Fetch/Promises -->
+    <!-- Nested Selects Filter with Fetch/Promises -->
     <div class="row justify-content-center mb-5">
         <div class="col-12 col-md-10 col-lg-8">
             <div class="card shadow-sm border-0 p-3">
-                <h6 class="fw-bold text-danger mb-3">⚡ Explorador Rápido por Tipo (Endpoint Anidado + Fetch/Promises)</h6>
+                <h6 class="fw-bold text-danger mb-3">⚡ Quick Type Explorer (Nested Endpoint + Fetch/Promises)</h6>
                 <div class="row g-2">
-                    <!-- Select 1: Endpoint Principal (/type) -->
                     <div class="col-12 col-sm-6">
-                        <label class="form-label small fw-bold text-secondary">1. Selecciona un Tipo:</label>
+                        <label class="form-label small fw-bold text-secondary">1. Select a Type:</label>
                         <select id="selectTipo" class="form-select shadow-sm">
-                            <option value="">Cargando tipos desde PokéAPI...</option>
+                            <option value="">Loading types from PokéAPI...</option>
                         </select>
                     </div>
-
-                    <!-- Select 2 Anidado: Endpoint Hijo (/type/{id} -> /pokemon/{name}) -->
                     <div class="col-12 col-sm-6">
-                        <label class="form-label small fw-bold text-secondary">2. Pokémon (Respuesta Concatenada):</label>
+                        <label class="form-label small fw-bold text-secondary">2. Pokémon (Concatenated Response):</label>
                         <select id="selectPokemonAnidado" class="form-select shadow-sm" disabled>
-                            <option value="">Primero elige un tipo...</option>
+                            <option value="">Select a type first...</option>
                         </select>
                     </div>
                 </div>
@@ -109,18 +105,16 @@
         </div>
     </div>
 
-
-    <!-- Mensaje de error -->
+    <!-- Error message -->
     <div th:if="${error}" class="alert alert-warning text-center col-md-6 mx-auto shadow-sm" role="alert">
         <span th:text="${error}"></span>
     </div>
 
-    <!-- Responsivo: 1 columna en móvil, 2 en tablet, 3 en PC -->
+    <!-- Responsive 3-Column Grid -->
     <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
         <div class="col" th:each="poke : ${pokemones}">
             <a th:href="@{/pokemon/{nombre}(nombre=${poke.nombre})}" class="text-decoration-none">
                 <div class="card h-100 shadow-sm border-0 poke-card">
-                    <!-- Guardamos ambas URLs en atributos data-hd y data-pixel -->
                     <img th:src="${poke.imagen}"
                          th:data-hd="${poke.imagen}"
                          th:data-pixel="${poke.imagenPixel}"
@@ -136,45 +130,43 @@
         </div>
     </div>
 
-    <!-- Paginación para ver más Pokémon -->
+    <!-- Pagination -->
     <div th:if="${buscar == null or buscar.isEmpty()}" class="d-flex justify-content-center align-items-center gap-3 mt-5">
         <a th:if="${paginaActual > 0}"
            th:href="@{/(pagina=${paginaActual - 1})}"
-           class="btn btn-danger px-4 fw-bold shadow-sm">&larr; Anterior</a>
+           class="btn btn-danger px-4 fw-bold shadow-sm">&larr; Previous</a>
 
-        <span class="fw-bold fs-5" th:text="'Página ' + (${paginaActual + 1})"></span>
+        <span class="fw-bold fs-5" th:text="'Page ' + (${paginaActual + 1})"></span>
 
         <a th:href="@{/(pagina=${paginaActual + 1})}"
-           class="btn btn-danger px-4 fw-bold shadow-sm">Siguiente &rarr;</a>
+           class="btn btn-danger px-4 fw-bold shadow-sm">Next &rarr;</a>
     </div>
 </div>
 
 <script>
-    // 1. Lógica del Delay de 4 segundos en el buscador
     const formBuscar = document.getElementById('formBuscar');
     const btnSubmit = document.getElementById('btnSubmit');
     const mensajeEspera = document.getElementById('mensajeEspera');
 
     formBuscar.addEventListener('submit', function(event) {
-        event.preventDefault(); // Detiene el envío inmediato
+        event.preventDefault();
         btnSubmit.disabled = true;
-        btnSubmit.innerHTML = '⏳ Buscando...';
+        btnSubmit.innerHTML = '⏳ Searching...';
         mensajeEspera.classList.remove('d-none');
 
         setTimeout(() => {
-            formBuscar.submit(); // Envía el formulario tras 4000 ms (4 segundos)
+            formBuscar.submit();
         }, 4000);
     });
 
-    // 2. Lógica de Modo Oscuro
     function aplicarTema(tema) {
         document.documentElement.setAttribute('data-bs-theme', tema);
         const btnTheme = document.getElementById('btnTheme');
         if (tema === 'dark') {
-            btnTheme.innerHTML = '☀️ Modo Claro';
+            btnTheme.innerHTML = '☀️ Light Mode';
             btnTheme.className = 'btn btn-outline-light fw-bold shadow-sm';
         } else {
-            btnTheme.innerHTML = '🌙 Modo Oscuro';
+            btnTheme.innerHTML = '🌙 Dark Mode';
             btnTheme.className = 'btn btn-outline-dark fw-bold shadow-sm';
         }
     }
@@ -186,7 +178,6 @@
         aplicarTema(nuevo);
     }
 
-    // 3. Lógica de Modo Pixel Art
     function aplicarPixelArt(esPixel) {
         const imagenes = document.querySelectorAll('.switchable-img');
         const btnPixel = document.getElementById('btnPixel');
@@ -204,10 +195,10 @@
         });
 
         if (esPixel) {
-            btnPixel.innerHTML = '✨ Modo HD';
+            btnPixel.innerHTML = '✨ HD Mode';
             btnPixel.classList.replace('btn-outline-primary', 'btn-primary');
         } else {
-            btnPixel.innerHTML = '👾 Modo Pixel Art';
+            btnPixel.innerHTML = '👾 Pixel Art Mode';
             btnPixel.classList.replace('btn-primary', 'btn-outline-primary');
         }
     }
@@ -219,26 +210,15 @@
         aplicarPixelArt(nuevoEstado);
     }
 
-    // Cargar preferencias guardadas al abrir la página
-    document.addEventListener('DOMContentLoaded', () => {
-        const temaGuardado = localStorage.getItem('pokeTema') || 'light';
-        const pixelGuardado = localStorage.getItem('pokePixel') === 'true';
-        aplicarTema(temaGuardado);
-        aplicarPixelArt(pixelGuardado);
-    });
-
-    // 4. Lógica de Fetch, Promises, Endpoint Anidado y Select Anidado
     const selectTipo = document.getElementById('selectTipo');
     const selectPokemonAnidado = document.getElementById('selectPokemonAnidado');
 
-    // A) Petición inicial con fetch() y Promise (.then) para llenar el primer Select
     function cargarTipos() {
         fetch('https://pokeapi.co/api/v2/type')
-            .then(response => response.json()) // Promesa 1: Convertir respuesta a JSON
-            .then(data => {                    // Promesa 2: Procesar los datos recibidos
-                selectTipo.innerHTML = '<option value="">-- Elige un tipo elemental --</option>';
+            .then(response => response.json())
+            .then(data => {
+                selectTipo.innerHTML = '<option value="">-- Choose an elemental type --</option>';
                 data.results.forEach(tipo => {
-                    // Guardamos la URL del endpoint anidado directamente en el value del option
                     const option = document.createElement('option');
                     option.value = tipo.url;
                     option.textContent = tipo.name.toUpperCase();
@@ -246,50 +226,40 @@
                 });
             })
             .catch(error => {
-                console.error('Error cargando tipos:', error);
-                selectTipo.innerHTML = '<option value="">Error al cargar tipos</option>';
+                console.error('Error loading types:', error);
+                selectTipo.innerHTML = '<option value="">Error loading types</option>';
             });
     }
 
-    // B) Cuando cambia el Select 1, consumimos el Endpoint Anidado y combinamos Promises
     selectTipo.addEventListener('change', async function() {
-        const urlEndpointAnidado = this.value; // Ej: https://pokeapi.co/api/v2/type/10/
+        const urlEndpointAnidado = this.value;
 
         if (!urlEndpointAnidado) {
-            selectPokemonAnidado.innerHTML = '<option value="">Primero elige un tipo...</option>';
+            selectPokemonAnidado.innerHTML = '<option value="">Select a type first...</option>';
             selectPokemonAnidado.disabled = true;
             return;
         }
 
         selectPokemonAnidado.disabled = true;
-        selectPokemonAnidado.innerHTML = '<option value="">⏳ Consultando endpoint anidado...</option>';
+        selectPokemonAnidado.innerHTML = '<option value="">⏳ Querying nested endpoint...</option>';
 
         try {
-            // 1. Llamada al Endpoint Anidado del Tipo seleccionado
             const resTipo = await fetch(urlEndpointAnidado);
             const dataTipo = await resTipo.json();
-
-            // Tomamos los primeros 8 Pokémon de ese tipo para no saturar la red
             const primerosPokemon = dataTipo.pokemon.slice(0, 8);
 
-            // 2. Combinación de Peticiones (Promise.all):
-            // Por cada Pokémon de la lista, hacemos un fetch() a su propia URL anidada (p.pokemon.url)
             const promesasDetalle = primerosPokemon.map(item =>
                 fetch(item.pokemon.url).then(res => res.json())
             );
 
-            // Promise.all espera a que TODAS las peticiones paralelas terminen
             const detallesPokemones = await Promise.all(promesasDetalle);
 
-            // 3. Llenar el Select Anidado concatenando múltiples datos de las respuestas
-            selectPokemonAnidado.innerHTML = '<option value="">-- Selecciona un Pokémon para ir a su detalle --</option>';
+            selectPokemonAnidado.innerHTML = '<option value="">-- Select a Pokémon to view details --</option>';
 
             detallesPokemones.forEach(poke => {
                 const tiposConcatenados = poke.types.map(t => t.type.name).join('/');
                 const alturaMetros = poke.height / 10;
-
-                // Concatenación de la respuesta en el texto del Select Anidado
-                const textoConcatenado = `#${poke.id} - ${poke.name.toUpperCase()} [${tiposConcatenados}] | Alt: ${alturaMetros}m`;
+                const textoConcatenado = `#${poke.id} - ${poke.name.toUpperCase()} [${tiposConcatenados}] | Height: ${alturaMetros}m`;
 
                 const option = document.createElement('option');
                 option.value = poke.name;
@@ -300,12 +270,11 @@
             selectPokemonAnidado.disabled = false;
 
         } catch (error) {
-            console.error('Error en endpoint anidado:', error);
-            selectPokemonAnidado.innerHTML = '<option value="">Error al obtener Pokémon</option>';
+            console.error('Error in nested endpoint:', error);
+            selectPokemonAnidado.innerHTML = '<option value="">Error fetching Pokémon</option>';
         }
     });
 
-    // C) Al elegir un Pokémon del segundo Select, redirige a tu controlador de Spring Boot
     selectPokemonAnidado.addEventListener('change', function() {
         const nombrePokemon = this.value;
         if (nombrePokemon) {
@@ -313,9 +282,11 @@
         }
     });
 
-    // Ejecutamos la carga de tipos al iniciar la página
-    document.addEventListener('DOMContentLoaded', cargarTipos);
-
+    document.addEventListener('DOMContentLoaded', () => {
+        aplicarTema(localStorage.getItem('pokeTema') || 'light');
+        aplicarPixelArt(localStorage.getItem('pokePixel') === 'true');
+        cargarTipos();
+    });
 </script>
 
 </body>

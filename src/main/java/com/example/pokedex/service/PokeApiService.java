@@ -97,7 +97,7 @@ public class PokeApiService {
                 List<Map<String, Object>> entries = (List<Map<String, Object>>) response.get("flavor_text_entries");
                 for (Map<String, Object> entry : entries) {
                     Map<String, String> language = (Map<String, String>) entry.get("language");
-                    if ("es".equals(language.get("name"))) {
+                    if ("en".equals(language.get("name"))) {
                         String texto = (String) entry.get("flavor_text");
                         // Limpiar saltos de línea raros que trae la API
                         return texto.replace("\n", " ").replace("\f", " ");
@@ -105,8 +105,8 @@ public class PokeApiService {
                 }
             }
         } catch (Exception e) {
-            return "Descripción no disponible.";
+            return "Description not available.";
         }
-        return "Sin descripción.";
+        return "No English description available.";
     }
 }
