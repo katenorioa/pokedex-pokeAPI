@@ -1,0 +1,30 @@
+  version: '3.8'
+
+  services:
+    # 1. PokéAPI Spring Boot Microservice (Isolated - No public port 8082 exposed)
+    app2:
+      image: kevint17/proyecto2:v1
+      container_name: app2
+      restart: always
+      expose:
+        - "8080"
+      networks:
+        - app-net
+
+    # 2. Nginx API Gateway (Single Point of Entry on Port 80)
+    api_gateway:
+      image: nginx:alpine
+      container_name: api_gateway
+      restart: always
+      ports:
+        - "80:80"
+      volumes:
+        - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      depends_on:
+        - app2
+      networks:
+        - app-net
+
+  networks:
+    app-net:
+      external: true
